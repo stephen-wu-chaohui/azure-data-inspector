@@ -1,0 +1,67 @@
+<ion-header>
+  <ion-toolbar>
+		<ion-buttons slot="start">
+			<ion-back-button defaultHref="/home"></ion-back-button>
+		</ion-buttons>
+		<ion-title>
+			Sensor View
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+	<ion-card padding *ngIf="sensor">
+		<ion-card-title>
+			<ion-text>
+				<ion-input type="text" [(ngModel)]="sensor.name" (change)="setLabelChanged()" color="labelChanged?'danger':'primary'">
+				</ion-input>
+			</ion-text>
+		</ion-card-title>
+		<ion-card-subtitle>
+			<ion-text>
+				<ion-input type="text" [(ngModel)]="sensor.description" (change)="setLabelChanged()" color="labelChanged?'danger':'primary'">
+				</ion-input>
+			</ion-text>
+		</ion-card-subtitle>
+
+		<ion-fab vertical="center" horizontal="end" slot="fixed">
+			<ion-fab-button size="small" (click)="updateSensor()" color="danger" [disabled]="!labelChanged">
+				<ion-icon name="checkbox-outline"></ion-icon>
+			</ion-fab-button>
+		</ion-fab>
+	</ion-card>
+
+	<ion-item *ngIf="sensor">
+		<ion-grid>
+			<ion-row>
+				<ion-col width="9">Current Value:</ion-col>
+				<ion-col class="value" width="3">
+					<ion-input class="value" type="number" inputmode="numeric" min="4" max="20" [(ngModel)]="newValue">
+					</ion-input>
+				</ion-col>
+			</ion-row>
+		</ion-grid>
+		<ion-button slot="end" shape="round" (click)="addSensorValue()">
+			<ion-icon name="add"></ion-icon>
+		</ion-button>
+	</ion-item>
+
+	<ion-item *ngFor="let v of currentValues">
+		<ion-grid>
+			<ion-row>
+				<ion-col width="9">{{v.lastUpdated}}</ion-col>
+				<ion-col class="value" width="3">{{v.value | number: '2.2'}}</ion-col>
+			</ion-row>
+		</ion-grid>
+	</ion-item>
+
+</ion-content>
+
+<ion-footer>
+	<ion-fab vertical="center" horizontal="end" slot="fixed" *ngIf="sensor">
+		<ion-fab-button size="small" (click)="removeSensor()" color="danger">
+			<ion-icon name="trash"></ion-icon>
+		</ion-fab-button>
+	</ion-fab>
+</ion-footer>
+

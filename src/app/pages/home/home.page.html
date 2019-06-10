@@ -1,0 +1,28 @@
+<ion-content>
+  <ion-card class="welcome-card">
+    <ion-card-header>
+      <ion-card-subtitle>{{project ? 'Welcome to': 'Loading...'}}</ion-card-subtitle>
+      <ion-card-title>{{project?.name || 'Demo Project'}}</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+				<ion-img src="/assets/shapes.svg"></ion-img>
+				<br>
+				<p>{{project?.description || 'Please wait while loading...'}}</p>
+    </ion-card-content>
+	</ion-card>
+	<ion-spinner name="crescent" *ngIf="!project"></ion-spinner>
+</ion-content>
+
+<ion-footer padding *ngIf="project">
+	<p>To view variables in sites:</p>
+	<ion-button color="primary" expand="block" fill="outline" shape="round" routerLink="/project" (click)="setEditorMode(false)">
+		<ion-ripple-effect></ion-ripple-effect>
+		<ion-icon name="map"></ion-icon>Inspect sites
+	</ion-button>
+	<br>
+	<p>To create/modify/remove sites and their variables</p>
+	<ion-button color="tertiary" expand="block" fill="outline" shape="round" routerLink="/project" (click)="setEditorMode(true)">
+		<ion-ripple-effect></ion-ripple-effect>
+		<ion-icon name="settings"></ion-icon>Configure project
+	</ion-button>
+</ion-footer>

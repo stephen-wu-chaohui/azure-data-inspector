@@ -1,5 +1,7 @@
 {
-  "name": "ScadaDemo",
-  "integrations": {},
+  "name": "azure-data-inspector",
+  "integrations": {
+    "cordova": {}
+  },
   "type": "angular"
 }

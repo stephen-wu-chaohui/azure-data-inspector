@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { Company, SampleService, Site } from '../../service/sample.service';
 import { NavController } from '@ionic/angular';
 import { CurrentSelectionService } from '../../service/current-selection.service';
-import * as moment from 'moment';
 
 @Component({
   selector: 'app-home',

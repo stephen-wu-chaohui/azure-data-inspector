@@ -1,8 +1,7 @@
 import { Component } from '@angular/core';
-import { NavController } from '@ionic/angular';
-import { SampleService, Site, Company, Sensor } from '../../service/sample.service';
+import { NavController, AlertController } from '@ionic/angular';
+import { SampleService, Site, Company, Sensor, Entity } from '../../service/sample.service';
 import { CurrentSelectionService } from '../../service/current-selection.service';
-import * as moment from 'moment';
 
 @Component({
   selector: 'app-site',
@@ -10,6 +9,7 @@ import * as moment from 'moment';
   styleUrls: ['site.page.scss']
 })
 export class SitePage {
+  labelChanged = false;
   project: Company;
   site: Site;
   sensors: Sensor[];
@@ -18,7 +18,8 @@ export class SitePage {
   constructor(
     public selectionService: CurrentSelectionService,
     public sampleService: SampleService,
-    public nav: NavController
+    public nav: NavController,
+    public alertController: AlertController
   ) {
     this.site = selectionService.currentSite;
     if (this.site) {
@@ -70,9 +71,38 @@ export class SitePage {
     this.nav.navigateForward('/variable');
   }
 
-  deleteSensor(sensor: Sensor) {
-    this.selectionService.currentSensor = null;
-    this.sampleService.sensors.delete(sensor.id);
+  setLabelChanged() {
+    this.labelChanged = true;
+  }
+
+  updateSite() {
+    if (this.site) {
+      this.sampleService.sites.upsert(this.site);
+      this.labelChanged = false;
+    }
+  }
+
+  async removeSensor(sensor) {
+    if (this.site && sensor) {
+      const alert = await this.alertController.create({
+        header: 'Remove the sensor',
+        message: `Are you sure to remove the sensor of <strong>${sensor.name}</strong>?`,
+        buttons: [
+          {
+            text: 'Cancel',
+            role: 'cancel',
+            cssClass: 'secondary',
+          }, {
+            text: 'OK',
+            handler: () => {
+              this.sampleService.sensors.delete(sensor.id);
+              this.nav.back();
+            }
+          }
+        ]
+      });
+      await alert.present();
+    }
   }
 
   addSensor() {
@@ -81,7 +111,7 @@ export class SitePage {
     }
     const newSensor: Sensor = {
       keywords: '',
-      lastUpdated: moment().unix(),
+      lastUpdated: Entity.unixNow(),
       deleted: false,
       siteId: this.site.id,
       name: 'New Sensor',

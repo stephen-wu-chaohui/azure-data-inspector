@@ -3,26 +3,38 @@
 		<ion-buttons slot="start">
 			<ion-back-button defaultHref="/home"></ion-back-button>
 		</ion-buttons>
-		<ion-title>{{project?.name}}</ion-title>
+		<ion-title>Sites</ion-title>
 	</ion-toolbar>
 </ion-header>
 
-<ion-content no-padding >
-		<ion-card no-padding *ngFor="let site of sites" (click)="openSite(site)">
-		<ion-grid>
-			<ion-row>
-				<ion-col size="12">
-					<ion-row><ion-label color="primary">{{site.name}}</ion-label></ion-row>
-					<ion-row><ion-label color="secondary">{{site.description}}</ion-label></ion-row>
-				</ion-col>
-			</ion-row>
-		</ion-grid>
+<ion-content no-padding>
+	<ion-card>
+		<ion-card-header>
+			<ion-card-title>
+				{{project?.name}}
+			</ion-card-title>
+		</ion-card-header>
+		<ion-card-content>
+			<ion-card no-padding *ngFor="let site of sites" (click)="openSite(site)">
+					<ion-grid>
+						<ion-row>
+							<ion-col size="9">
+								<ion-row><ion-label color="primary">{{site.name}}</ion-label></ion-row>
+								<ion-row><ion-label color="secondary">{{site.description}}</ion-label></ion-row>
+							</ion-col>
+							<ion-col size="3" *ngIf="selectionService.editMode">
+								<ion-button fill="clear" shape="round" (click)="removeSite(site)"><ion-icon color="danger" name="close-circle"></ion-icon></ion-button>
+							</ion-col>
+						</ion-row>
+					</ion-grid>
+			</ion-card>
+		</ion-card-content>
 	</ion-card>
+
+	<ion-fab vertical="bottom" horizontal="end" slot="fixed" *ngIf="selectionService.editMode">
+		<ion-fab-button size="small" (click)="addSite()" color="Tertiary">
+			<ion-icon name="add"></ion-icon>
+		</ion-fab-button>
+	</ion-fab>
+
 </ion-content>
-
-<!-- <ion-fab vertical="bottom" horizontal="center" slot="fixed">
-	<ion-fab-button size="small" (click)="addSensor()" color="danger">
-		<ion-icon name="add"></ion-icon>
-	</ion-fab-button>
-</ion-fab> -->
-

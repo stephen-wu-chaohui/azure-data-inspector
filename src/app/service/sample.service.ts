@@ -12,8 +12,12 @@ export class Entity implements SigData {
   deleted: false;
 
   constructor() {
-    this.lastUpdated = moment().unix();
+    this.lastUpdated = Entity.unixNow();
   }
+
+  static dateOf(lastUpdated) { return new Date(lastUpdated*1000); }
+
+  static unixNow() { return moment().unix() }
 }
 
 export class Company extends Entity {

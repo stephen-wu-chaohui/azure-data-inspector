@@ -1,4 +1,4 @@
-import { Component, AfterViewInit } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy } from '@angular/core';
 import { Company, Site, Sensor, SampleService, Sample, Entity } from '../../service/sample.service';
 import { CurrentSelectionService } from '../../service/current-selection.service';
 import { NavController, AlertController, ModalController } from '@ionic/angular';
@@ -10,14 +10,26 @@ import { SimulateModalPage } from './simulate-modal/simulate-modal.page';
   templateUrl: 'variable.page.html',
   styleUrls: ['variable.page.scss']
 })
-export class VariablePage implements AfterViewInit {
+export class VariablePage implements AfterViewInit, OnDestroy {
   project: Company;
   site: Site;
   sensor: Sensor;
-  currentValues: Sample[] = [];
-  newValue = 4;
-
   labelChanged = false;
+  currentValues: Sample[] = [];
+
+  newValue = 4;
+  settings = true;
+  runningThread = null;
+  enableRunning = false;
+  samplingThread = null;
+  enableSampling = false;
+  phase = 0;
+  autoSendValues = false;
+  simulatorMode: 'random' | 'sine' | 'segment' = 'random';
+  interval = 16; // seconds
+  rangeMin = 4;
+  rangeMax = 20;
+  sampleInterval = 2;  // seconds
 
   lastUpdatedOf(s: Sample) { return moment.unix(s.lastUpdated).toDate(); }
 
@@ -71,8 +83,51 @@ export class VariablePage implements AfterViewInit {
     }
   }
 
+  stepVariable() {
+    let v = this.newValue;
+    switch(this.simulatorMode) {
+      case 'random':
+        v = Math.random()*(this.rangeMax-this.rangeMin) + this.rangeMin;
+        break;
+      case 'segment':
+        v = this.phase * (this.rangeMax - this.rangeMin) / this.interval + this.rangeMin;
+        if (v > this.rangeMax) {
+          v = this.rangeMin;
+        }
+        break;
+      case 'sine':
+        v = (Math.sin(this.phase / this.interval * 6.28) + 1) * (this.rangeMax - this.rangeMin) / 2 + this.rangeMin;
+        break;
+    }
+    this.phase += 0.5;
+    if (this.phase >= this.interval) {
+      this.phase = 0;
+    }
+    this.newValue = v;
+  }
+
+  toggleRunning() {
+    if (this.runningThread) {
+      clearInterval(this.runningThread);
+      delete this.runningThread;
+    }
+    if (!this.enableRunning) {
+      this.runningThread = setInterval(() => this.stepVariable(), 500);
+    }
+  }
+
+  toggleSamples() {
+    if (this.samplingThread) {
+      clearInterval(this.samplingThread);
+      delete this.samplingThread;
+    }
+    if (!this.enableSampling) {
+      this.samplingThread = setInterval(() => this.addSensorValue(), this.sampleInterval * 1000);
+    }
+  }
+
   addSensorValue() {
-    if (this.sensor) {
+    if (this.sensor && this.enableRunning) {
       const v: Sample = {
         keywords: '',
         lastUpdated: Entity.unixNow(),
@@ -95,4 +150,16 @@ export class VariablePage implements AfterViewInit {
  
     return await modal.present();
   }
+
+  toggleSettings() {
+    this.settings = !this.settings;
+  }
+
+  ngOnDestroy() {
+    this.enableRunning = true;
+    this.enableSampling = true;
+    this.toggleRunning();
+    this.toggleSamples();
+  }
 }
+

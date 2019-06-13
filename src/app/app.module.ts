@@ -10,11 +10,12 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { HttpClientModule } from '@angular/common/http';
 import { SimulateModalPageModule } from './pages/variable/simulate-modal/simulate-modal.module';
+import { AdminModalPageModule } from './pages/home/admin-modal/admin-modal.module';
 
 @NgModule({
   declarations: [AppComponent],
   entryComponents: [],
-  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule, HttpClientModule, SimulateModalPageModule],
+  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule, HttpClientModule, AdminModalPageModule, SimulateModalPageModule],
   providers: [
     StatusBar,
     SplashScreen,

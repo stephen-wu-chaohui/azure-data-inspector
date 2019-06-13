@@ -9,6 +9,11 @@ import { Sensor } from 'src/app/service/sample.service';
 })
 export class SimulateModalPage implements OnInit {
   sensor: Sensor;
+  autoSendValues = false;
+  simulatorMode: 'random' | 'sine' | 'segment' = 'random';
+  interval = 18; // second
+  rangeMin = 4;
+  rangeMax = 20;
   
   constructor(
     private modalController: ModalController,

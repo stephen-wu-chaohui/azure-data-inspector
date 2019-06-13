@@ -13,16 +13,22 @@
 	<ion-spinner name="crescent" *ngIf="!project"></ion-spinner>
 </ion-content>
 
+<ion-fab vertical="top" horizontal="end" slot="fixed" *ngIf="project">
+	<ion-fab-button translucent color="light" (click)="setEditorMode(true)">
+		<ion-icon color="primary" name="settings"></ion-icon>
+	</ion-fab-button>
+</ion-fab>
+
 <ion-footer padding *ngIf="project">
 	<p>To view variables in sites:</p>
-	<ion-button color="primary" expand="block" fill="outline" shape="round" routerLink="/project" (click)="setEditorMode(false)">
+	<ion-button color="primary" expand="block" fill="outline" shape="round" (click)="setEditorMode(false)">
 		<ion-ripple-effect></ion-ripple-effect>
 		<ion-icon name="map"></ion-icon>Inspect sites
 	</ion-button>
 	<br>
-	<p>To create/modify/remove sites and their variables</p>
-	<ion-button color="tertiary" expand="block" fill="outline" shape="round" routerLink="/project" (click)="setEditorMode(true)">
+	<!-- <p>To create/modify/remove sites and their variables</p>
+	<ion-button color="tertiary" expand="block" fill="outline" shape="round" (click)="setEditorMode(true)">
 		<ion-ripple-effect></ion-ripple-effect>
 		<ion-icon name="settings"></ion-icon>Configure project
-	</ion-button>
+	</ion-button> -->
 </ion-footer>

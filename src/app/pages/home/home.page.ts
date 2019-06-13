@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { Company, SampleService, Site } from '../../service/sample.service';
-import { NavController } from '@ionic/angular';
+import { NavController, AlertController, ModalController } from '@ionic/angular';
 import { CurrentSelectionService } from '../../service/current-selection.service';
+import { AdminModalPage } from './admin-modal/admin-modal.page';
 
 @Component({
   selector: 'app-home',
@@ -14,6 +15,8 @@ export class HomePage {
   constructor(
     public selectionService: CurrentSelectionService,
     public sampleService: SampleService,
+    public alertController: AlertController,
+    public modalController: ModalController,   
     public nav: NavController) {
       this.project = selectionService.currentProject;
       this.selectionService.projectChanged.subscribe(project => {
@@ -21,7 +24,23 @@ export class HomePage {
       });
   }
 
-  setEditorMode(editMode) {
-    this.selectionService.editMode = editMode;
+  async setEditorMode(editMode) {
+    if (editMode) {
+      const modal = await this.modalController.create({
+        component: AdminModalPage,
+        componentProps: {
+        }
+      });
+      modal.onDidDismiss().then(passed => {
+        if (passed) {
+          this.selectionService.editMode = true;
+          this.nav.navigateRoot('/project');
+        }
+      });      
+      return await modal.present();
+    } else {
+      this.selectionService.editMode = false;
+      this.nav.navigateRoot('/project');
+    }
   }
 }

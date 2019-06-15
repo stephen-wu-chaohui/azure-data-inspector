@@ -4,6 +4,7 @@ import { CurrentSelectionService } from '../../service/current-selection.service
 import { NavController, AlertController, ModalController, PickerController } from '@ionic/angular';
 import * as moment from 'moment';
 import * as Chart from 'chart.js';
+import { RANGE_VALUE_ACCESSOR } from '@angular/forms/src/directives/range_value_accessor';
 
 @Component({
   selector: 'app-variable',
@@ -19,14 +20,13 @@ export class VariablePage implements AfterViewInit, OnDestroy {
   labelChanged = false;
 
   newValue = 4;
-  settings = true;
   runningThread = null;
   samplingThread = null;
   enableSampling = false;
   phase = 0;
   autoSendValues = false;
   simulatorMode: 'random' | 'sine' | 'segment' = 'sine';
-  interval = 16; // seconds
+  duration = 16; // seconds
   rangeMin = 4;
   rangeMax = 20;
   sampleInterval = 2;  // seconds
@@ -93,29 +93,28 @@ export class VariablePage implements AfterViewInit, OnDestroy {
         v = Math.random()*(this.rangeMax-this.rangeMin) + this.rangeMin;
         break;
       case 'segment':
-        v = this.phase * (this.rangeMax - this.rangeMin) / this.interval + this.rangeMin;
+        v = this.phase * (this.rangeMax - this.rangeMin) / this.duration + this.rangeMin;
         if (v > this.rangeMax) {
           v = this.rangeMin;
         }
         break;
       case 'sine':
-        v = (Math.sin(this.phase / this.interval * 6.28) + 1) * (this.rangeMax - this.rangeMin) / 2 + this.rangeMin;
+        v = (Math.sin(this.phase / this.duration * 6.28) + 1) * (this.rangeMax - this.rangeMin) / 2 + this.rangeMin;
         break;
     }
     this.phase += 2;
-    if (this.phase >= this.interval) {
+    if (this.phase >= this.duration) {
       this.phase = 0;
     }
     this.newValue = v;
   }
 
-  toggleSamples() {
-    this.settings = !this.settings;
+  resetSampling() {
     if (this.samplingThread) {
       clearInterval(this.samplingThread);
       delete this.samplingThread;
     }
-    if (!this.enableSampling) {
+    if (this.enableSampling) {
       this.samplingThread = setInterval(() => this.addSensorValue(), this.sampleInterval * 1000);
     }
   }
@@ -141,8 +140,8 @@ export class VariablePage implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.enableSampling = true;
-    this.toggleSamples();
+    this.enableSampling = false;
+    this.resetSampling();
   }
 
   openChart() {
@@ -174,7 +173,7 @@ export class VariablePage implements AfterViewInit, OnDestroy {
       keywords: '',
       lastUpdated: Entity.unixNow(),
       deleted: false,
-      sensorId: this.sensor.id,
+      sensorId: 0,
       value: 0,
       tm: new Date(),
     });
@@ -201,6 +200,102 @@ export class VariablePage implements AfterViewInit, OnDestroy {
          data: graphData,
          options: this.options,
       });
+  }
+
+
+  getColumnOptions(columnOptions: any[]) {
+    let options = columnOptions.map((v, i) => ({
+      text: v,
+      value: i,
+    }));
+    return options;
+  }
+
+  async pickSampleInterval() {
+    if (!this.enableSampling) {
+      this.resetSampling();
+      return;
+    }
+    const optionSeconds = [1,2,3,4,5,6,7,8,9,10,20,30,60,120,180,300,600,1800];
+    const picker = await this.pickerController.create({
+      columns: [{
+          name: 'sampleInterval',
+          options: optionSeconds.map(v => ({ text:v.toString(), value:v })),
+          selectedIndex: optionSeconds.findIndex(v => v === this.sampleInterval),
+        }],
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          handler: () => {
+            this.enableSampling = false;
+          }
+        },
+        {
+          text: 'Confirm',
+          handler: (selected) => {
+            this.sampleInterval = selected.sampleInterval.value;
+            this.resetSampling();
+          }
+        }
+      ]
+    });
+
+    await picker.present();
+  }
+
+  async pickDuration() {
+    const optionSeconds = [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,24,30,40,50,60,80,90,100,200,400,600,1000];
+    const picker = await this.pickerController.create({
+      columns: [{
+          name: 'duration',
+          options: optionSeconds.map(v => ({ text:v.toString(), value:v })),
+          selectedIndex: optionSeconds.findIndex(v => v === this.duration),
+        }],
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+        },
+        {
+          text: 'Confirm',
+          handler: (selected) => {
+            this.duration = selected.duration.value;
+          }
+        }
+      ]
+    });
+    await picker.present();
+  }
+
+  async pickRange() {
+    const range = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+    const picker = await this.pickerController.create({
+      columns: [{
+          name: 'min',
+          options: range.map(v => ({ text:v.toString(), value:v })),
+          selectedIndex: range.findIndex(v => v === this.rangeMin),
+        }, {
+          name: 'max',
+          options: range.map(v => ({ text:v.toString(), value:v })),
+          selectedIndex: range.findIndex(v => v === this.rangeMax),
+        }],
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+        },
+        {
+          text: 'Confirm',
+          handler: (selected) => {
+            this.rangeMin = selected.min.value;
+            this.rangeMax = selected.max.value;
+          }
+        }
+      ]
+    });
+    await picker.present();
+
   }
 }
 

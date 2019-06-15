@@ -1,9 +1,9 @@
-import { Component, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, ViewChild } from '@angular/core';
 import { Company, Site, Sensor, SampleService, Sample, Entity } from '../../service/sample.service';
 import { CurrentSelectionService } from '../../service/current-selection.service';
-import { NavController, AlertController, ModalController } from '@ionic/angular';
+import { NavController, AlertController, ModalController, PickerController } from '@ionic/angular';
 import * as moment from 'moment';
-import { SimulateModalPage } from './simulate-modal/simulate-modal.page';
+import * as Chart from 'chart.js';
 
 @Component({
   selector: 'app-variable',
@@ -11,21 +11,21 @@ import { SimulateModalPage } from './simulate-modal/simulate-modal.page';
   styleUrls: ['variable.page.scss']
 })
 export class VariablePage implements AfterViewInit, OnDestroy {
+  @ViewChild('lineChart') lineChart;
+  
   project: Company;
   site: Site;
   sensor: Sensor;
   labelChanged = false;
-  currentValues: Sample[] = [];
 
   newValue = 4;
   settings = true;
   runningThread = null;
-  enableRunning = false;
   samplingThread = null;
   enableSampling = false;
   phase = 0;
   autoSendValues = false;
-  simulatorMode: 'random' | 'sine' | 'segment' = 'random';
+  simulatorMode: 'random' | 'sine' | 'segment' = 'sine';
   interval = 16; // seconds
   rangeMin = 4;
   rangeMax = 20;
@@ -33,43 +33,46 @@ export class VariablePage implements AfterViewInit, OnDestroy {
 
   lastUpdatedOf(s: Sample) { return moment.unix(s.lastUpdated).toDate(); }
 
+  currentValues: Sample[] = [];
+
+  private mountSamples() {
+    if (this.sensor) {
+        this.currentValues = this.sampleService.samples.data.filter(v => v.sensorId === this.sensor.id).sort((a,b) => (b.lastUpdated - a.lastUpdated)).slice(0, 10);
+    }
+  }
+
   constructor(
     public selectionService: CurrentSelectionService,
     public sampleService: SampleService,
     public nav: NavController,
     public alertController: AlertController,
+    public pickerController: PickerController,
     public modalController: ModalController    
   ) {
     this.sensor = this.selectionService.currentSensor;
+    this.mountSamples();
 
     this.selectionService.sensorChanged.subscribe(
       sensor => {
         this.sensor = sensor;
-        this.currentValues = [];
+        this.mountSamples();
+        this.updateChart();
       }
     );
+
     this.sampleService.samples.changed.subscribe(
       sample => {
         if (this.sensor && sample.sensorId === this.sensor.id) {
           this.currentValues.unshift(sample);
+          this.updateChart();
         }
       }
     );
     this.sampleService.samples.mounted.subscribe(
-      samples => this.mountSamples()
-    );
-  }
-
-  async ngAfterViewInit() {
-    this.mountSamples();
-  }
-
-  mountSamples() {
-    if (this.sensor) {
-      setTimeout(()=>{
-        this.currentValues = this.sampleService.samples.data.filter(v => v.sensorId === this.sensor.id).sort((a,b) => (b.lastUpdated - a.lastUpdated));
-      }, 500);
-    }
+      samples => {
+        this.mountSamples();
+        this.updateChart();
+      });
   }
 
   setLabelChanged() {
@@ -99,24 +102,15 @@ export class VariablePage implements AfterViewInit, OnDestroy {
         v = (Math.sin(this.phase / this.interval * 6.28) + 1) * (this.rangeMax - this.rangeMin) / 2 + this.rangeMin;
         break;
     }
-    this.phase += 0.5;
+    this.phase += 2;
     if (this.phase >= this.interval) {
       this.phase = 0;
     }
     this.newValue = v;
   }
 
-  toggleRunning() {
-    if (this.runningThread) {
-      clearInterval(this.runningThread);
-      delete this.runningThread;
-    }
-    if (!this.enableRunning) {
-      this.runningThread = setInterval(() => this.stepVariable(), 500);
-    }
-  }
-
   toggleSamples() {
+    this.settings = !this.settings;
     if (this.samplingThread) {
       clearInterval(this.samplingThread);
       delete this.samplingThread;
@@ -127,7 +121,9 @@ export class VariablePage implements AfterViewInit, OnDestroy {
   }
 
   addSensorValue() {
-    if (this.sensor && this.enableRunning) {
+    if (this.sensor) {
+      this.stepVariable();
+
       const v: Sample = {
         keywords: '',
         lastUpdated: Entity.unixNow(),
@@ -140,26 +136,71 @@ export class VariablePage implements AfterViewInit, OnDestroy {
     }
   }
 
-  async configSensor() {
-    const modal = await this.modalController.create({
-      component: SimulateModalPage,
-      componentProps: {
-        "sensor": this.sensor,
-      }
-    });
- 
-    return await modal.present();
-  }
-
-  toggleSettings() {
-    this.settings = !this.settings;
+  ngAfterViewInit(): void {
+    this.updateChart();
   }
 
   ngOnDestroy() {
-    this.enableRunning = true;
     this.enableSampling = true;
-    this.toggleRunning();
     this.toggleSamples();
+  }
+
+  openChart() {
+    this.nav.navigateForward('/variable-chart');
+  }
+
+  private options = {
+    animation: { duration: 0 },
+    legend: { display: false },
+    scales: {
+       yAxes: [{
+          ticks: {
+             beginAtZero: true,
+             stepSize: 5,
+             max : 20
+          }
+       }],
+       xAxes: [{
+          ticks: {
+             autoSkip: true
+          }
+       }]
+    }
+  }
+
+  updateChart() {
+    let samples = this.currentValues.slice(0, 10).reverse();
+    while (samples.length < 10) samples.push({
+      keywords: '',
+      lastUpdated: Entity.unixNow(),
+      deleted: false,
+      sensorId: this.sensor.id,
+      value: 0,
+      tm: new Date(),
+    });
+    let labels = samples.map(v => moment.unix(v.lastUpdated).format('mm:ss'));
+    let data = samples.map(v => v.value);
+    let backgroundColor = samples.map(v => `rgba(${v.sensorId % 256}, ${v.lastUpdated % 256}, ${Math.floor(v.value*12)})`);
+    let hoverBackgroundColor = [...backgroundColor];
+  
+    let graphData = {
+      labels,
+      datasets: [{
+         label: 'Variable samples',
+         data,
+         lineTension: 0.2,
+         backgroundColor,
+         hoverBackgroundColor,
+         fill: false
+      }]
+    };
+
+    new Chart(this.lineChart.nativeElement,
+      {
+         type: 'line',
+         data: graphData,
+         options: this.options,
+      });
   }
 }
 

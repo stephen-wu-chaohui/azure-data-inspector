@@ -31,9 +31,10 @@ export class HomePage {
         componentProps: {
         }
       });
-      modal.onDidDismiss().then(passed => {
+      modal.onDidDismiss().then(param => {
+        const passed = param.data;
+        this.selectionService.editMode = passed;
         if (passed) {
-          this.selectionService.editMode = true;
           this.nav.navigateRoot('/project');
         }
       });      

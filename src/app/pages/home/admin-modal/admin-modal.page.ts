@@ -1,12 +1,12 @@
-import { Component, OnInit } from '@angular/core';
-import { ModalController, NavParams } from '@ionic/angular';
+import { Component } from '@angular/core';
+import { ModalController } from '@ionic/angular';
 
 @Component({
   selector: 'app-admin-modal',
   templateUrl: './admin-modal.page.html',
   styleUrls: ['./admin-modal.page.scss'],
 })
-export class AdminModalPage implements OnInit {
+export class AdminModalPage {
   password = '';
   passwordChecked = false;
 
@@ -25,14 +25,9 @@ export class AdminModalPage implements OnInit {
     this.closeModal(false);
   }
 
-  constructor(
-    private modalController: ModalController,
-    private navParams: NavParams) {
-    }
+  constructor(private modalController: ModalController) {}
 
-  ngOnInit() {
-  }
-
+  
   async closeModal(passed: boolean) {
     await this.modalController.dismiss(passed);
   }

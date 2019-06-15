@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
-import { Company, Site, Sensor } from './sample.service';
+import { Company, Site, Sensor, Sample, SampleService } from './sample.service';
 
 @Injectable({
   providedIn: 'root'
@@ -39,6 +39,7 @@ export class CurrentSelectionService {
     this.sensorChanged.next(newValue);
   }
 
-  constructor() { }
+  constructor() {
+  }
 
 }

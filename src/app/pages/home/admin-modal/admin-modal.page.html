@@ -1,24 +1,30 @@
 <ion-header>
-  <ion-toolbar color="primary"> Authenticating </ion-toolbar>
+  <ion-toolbar>
+		<ion-title>
+			Authenticating
+    </ion-title>
+  </ion-toolbar>
 </ion-header>
 
-<ion-content>
-  <ion-card>
-    <ion-card-content>
-      <ion-item>
-        <ion-label position="stacked">System password:</ion-label>
-        <ion-input autofocus type="password" [(ngModel)]="password" (change)="passwordChecked = false"></ion-input>
-      </ion-item>
-      <ion-label text-center color="primary"> {{passwordChecked? passwordPassed()?'OK':'Wrong password':''}} </ion-label>
-    </ion-card-content>
-  </ion-card>
-</ion-content>
+<ion-content padding>
+  <ion-item lines="none">
+    <ion-label>System password:</ion-label>
+  </ion-item>
+  <ion-item>
+    <ion-input #firstFocus type="password" [(ngModel)]="password" (change)="passwordChecked = false" placeholder="Your Password"></ion-input>
+  </ion-item>
+  <ion-item lines="none">
+    <ion-label text-left color="secondary">Use 'admin' for Demo Project</ion-label>
+  </ion-item>
+  <ion-item lines="none">
+    <ion-label text-center color="danger"> {{passwordChecked? passwordPassed()?'OK':'Wrong password':''}} </ion-label>
+  </ion-item>
 
-<ion-footer>
   <ion-grid>
     <ion-row>
       <ion-col size="6"><ion-button color="tertiary" fill="outline" expand="block" (click)="onOK()" strong> <ion-icon name="checkmark"></ion-icon> OK </ion-button></ion-col>
       <ion-col size="6"><ion-button color="secondary" fill="outline" expand="block" (click)="onCancel()"> <ion-icon name="close"></ion-icon>Cancel </ion-button></ion-col> 
     </ion-row>
   </ion-grid>
-</ion-footer>
+</ion-content>
+

@@ -1,10 +1,9 @@
-import { Component, AfterViewInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, ViewChild, OnInit, ElementRef } from '@angular/core';
 import { Company, Site, Sensor, SampleService, Sample, Entity } from '../../service/sample.service';
 import { CurrentSelectionService } from '../../service/current-selection.service';
 import { NavController, AlertController, ModalController, PickerController } from '@ionic/angular';
 import * as moment from 'moment';
 import * as Chart from 'chart.js';
-import { RANGE_VALUE_ACCESSOR } from '@angular/forms/src/directives/range_value_accessor';
 
 @Component({
   selector: 'app-variable',
@@ -12,34 +11,6 @@ import { RANGE_VALUE_ACCESSOR } from '@angular/forms/src/directives/range_value_
   styleUrls: ['variable.page.scss']
 })
 export class VariablePage implements AfterViewInit, OnDestroy {
-  @ViewChild('lineChart') lineChart;
-  
-  project: Company;
-  site: Site;
-  sensor: Sensor;
-  labelChanged = false;
-
-  newValue = 4;
-  runningThread = null;
-  samplingThread = null;
-  enableSampling = false;
-  phase = 0;
-  autoSendValues = false;
-  simulatorMode: 'random' | 'sine' | 'segment' = 'sine';
-  duration = 16; // seconds
-  rangeMin = 4;
-  rangeMax = 20;
-  sampleInterval = 2;  // seconds
-
-  lastUpdatedOf(s: Sample) { return moment.unix(s.lastUpdated).toDate(); }
-
-  currentValues: Sample[] = [];
-
-  private mountSamples() {
-    if (this.sensor) {
-        this.currentValues = this.sampleService.samples.data.filter(v => v.sensorId === this.sensor.id).sort((a,b) => (b.lastUpdated - a.lastUpdated)).slice(0, 10);
-    }
-  }
 
   constructor(
     public selectionService: CurrentSelectionService,
@@ -47,7 +18,7 @@ export class VariablePage implements AfterViewInit, OnDestroy {
     public nav: NavController,
     public alertController: AlertController,
     public pickerController: PickerController,
-    public modalController: ModalController    
+    public modalController: ModalController
   ) {
     this.sensor = this.selectionService.currentSensor;
     this.mountSamples();
@@ -74,6 +45,40 @@ export class VariablePage implements AfterViewInit, OnDestroy {
         this.updateChart();
       });
   }
+  
+  @ViewChild('lineChart') lineChart: ElementRef;
+
+  chart: Chart;
+  project: Company;
+  site: Site;
+  sensor: Sensor;
+  labelChanged = false;
+
+  newValue = 4;
+  runningThread = null;
+  samplingThread = null;
+  enableSampling = false;
+  phase = 0;
+  autoSendValues = false;
+  simulatorMode: 'random' | 'sine' | 'segment' = 'sine';
+  duration = 16; // seconds
+  rangeMin = 4;
+  rangeMax = 20;
+  sampleInterval = 2;  // seconds
+  sampleNumbers = 1440;
+
+  currentValues: Sample[] = [];
+
+  lastUpdatedOf(s: Sample) { return moment.unix(s.lastUpdated).toDate(); }
+
+  private mountSamples() {
+    if (this.sensor) {
+        this.currentValues = this.sampleService.samples.data
+                                 .filter(v => v.sensorId === this.sensor.id)
+                                 .sort((a, b) => (b.lastUpdated - a.lastUpdated))
+                                 .slice(0, this.sampleNumbers);
+    }
+  }
 
   setLabelChanged() {
     this.labelChanged = true;
@@ -90,7 +95,7 @@ export class VariablePage implements AfterViewInit, OnDestroy {
     let v = this.newValue;
     switch(this.simulatorMode) {
       case 'random':
-        v = Math.random()*(this.rangeMax-this.rangeMin) + this.rangeMin;
+        v = Math.random() * (this.rangeMax - this.rangeMin) + this.rangeMin;
         break;
       case 'segment':
         v = this.phase * (this.rangeMax - this.rangeMin) / this.duration + this.rangeMin;
@@ -148,67 +153,98 @@ export class VariablePage implements AfterViewInit, OnDestroy {
     this.nav.navigateForward('/variable-chart');
   }
 
-  private options = {
-    animation: { duration: 0 },
-    legend: { display: false },
-    scales: {
-       yAxes: [{
-          ticks: {
-             beginAtZero: true,
-             stepSize: 5,
-             max : 20
-          }
-       }],
-       xAxes: [{
-          ticks: {
-             autoSkip: true
-          }
-       }]
-    }
-  }
-
   updateChart() {
-    let samples = this.currentValues.slice(0, 10).reverse();
-    while (samples.length < 10) samples.push({
-      keywords: '',
-      lastUpdated: Entity.unixNow(),
-      deleted: false,
-      sensorId: 0,
-      value: 0,
-      tm: new Date(),
-    });
-    let labels = samples.map(v => moment.unix(v.lastUpdated).format('mm:ss'));
-    let data = samples.map(v => v.value);
-    let backgroundColor = samples.map(v => `rgba(${v.sensorId % 256}, ${v.lastUpdated % 256}, ${Math.floor(v.value*12)})`);
-    let hoverBackgroundColor = [...backgroundColor];
-  
-    let graphData = {
+    const samples = this.currentValues.slice(0, this.sampleNumbers).reverse();
+    while (samples.length < this.sampleNumbers) {
+      samples.push({
+        keywords: '',
+        lastUpdated: Entity.unixNow(),
+        deleted: false,
+        sensorId: 0,
+        value: 0,
+        tm: new Date(),
+      });
+    }
+
+    const labels = samples.map(v => moment.unix(v.lastUpdated).toDate());
+    const data = samples.map(v => v.value);
+    const backgroundColor = samples.map(v => `rgba(${v.sensorId % 256}, ${v.lastUpdated % 256}, ${Math.floor(v.value * 12)})`);
+    const hoverBackgroundColor = [...backgroundColor];
+
+    const graphData = {
       labels,
       datasets: [{
-         label: 'Variable samples',
+         label: '',
          data,
-         lineTension: 0.2,
+         lineTension: 0,
          backgroundColor,
          hoverBackgroundColor,
          fill: false
       }]
     };
 
-    new Chart(this.lineChart.nativeElement,
-      {
-         type: 'line',
-         data: graphData,
-         options: this.options,
-      });
-  }
+    if (this.chart) {
+      this.chart.config.data = graphData;
+      this.chart.update();
+    } else {
+      const timeFormat = 'MM/DD/YYYY HH:mm';
+      const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 0 },
+        legend: { display: false },
+        scales: {
+           yAxes: [{
+              ticks: {
+                 beginAtZero: true,
+                 stepSize: 1,
+                 max : 20
+              }
+           }],
+           xAxes: [
+            {
+              type: 'time',
+              time: {
+                format: timeFormat,
+                // round: 'day'
+                tooltipFormat: 'll HH:mm'
+              },
+              scaleLabel: {
+                display: true,
+                labelString: 'Date'
+              },
+              ticks: {
+                maxRotation: 0
+              }
+            }
+          ],
+        },
+        pan: {
+          enabled: true,
+          mode: 'x',
+          speed: 10,
+          threshold: 10
+        },
+        zoom: {
+          enabled: true,
+          drag: false,
+          mode: 'x',
+          limits: {
+            max: 30,
+            min: 0.5
+          }
+        }
+      };
 
-
-  getColumnOptions(columnOptions: any[]) {
-    let options = columnOptions.map((v, i) => ({
-      text: v,
-      value: i,
-    }));
-    return options;
+      // tslint:disable-next-line: no-unused-expression
+      const ctx = (this.lineChart.nativeElement as HTMLCanvasElement).getContext('2d');
+      this.chart = new Chart(ctx,
+        {
+           type: 'line',
+           data: graphData,
+           options,
+        });
+    }
   }
 
   async pickSampleInterval() {
@@ -216,11 +252,11 @@ export class VariablePage implements AfterViewInit, OnDestroy {
       this.resetSampling();
       return;
     }
-    const optionSeconds = [1,2,3,4,5,6,7,8,9,10,20,30,60,120,180,300,600,1800];
+    const optionSeconds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 60, 120, 180, 300, 600, 1800];
     const picker = await this.pickerController.create({
       columns: [{
           name: 'sampleInterval',
-          options: optionSeconds.map(v => ({ text:v.toString(), value:v })),
+          options: optionSeconds.map(v => ({ text: v.toString(), value: v })),
           selectedIndex: optionSeconds.findIndex(v => v === this.sampleInterval),
         }],
       buttons: [
@@ -245,11 +281,11 @@ export class VariablePage implements AfterViewInit, OnDestroy {
   }
 
   async pickDuration() {
-    const optionSeconds = [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,24,30,40,50,60,80,90,100,200,400,600,1000];
+    const optionSeconds = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 24, 30, 40, 50, 60, 80, 90, 100, 200, 400, 600, 1000];
     const picker = await this.pickerController.create({
       columns: [{
           name: 'duration',
-          options: optionSeconds.map(v => ({ text:v.toString(), value:v })),
+          options: optionSeconds.map(v => ({ text: v.toString(), value: v })),
           selectedIndex: optionSeconds.findIndex(v => v === this.duration),
         }],
       buttons: [
@@ -269,15 +305,15 @@ export class VariablePage implements AfterViewInit, OnDestroy {
   }
 
   async pickRange() {
-    const range = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+    const range = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
     const picker = await this.pickerController.create({
       columns: [{
           name: 'min',
-          options: range.map(v => ({ text:v.toString(), value:v })),
+          options: range.map(v => ({ text: v.toString(), value: v })),
           selectedIndex: range.findIndex(v => v === this.rangeMin),
         }, {
           name: 'max',
-          options: range.map(v => ({ text:v.toString(), value:v })),
+          options: range.map(v => ({ text: v.toString(), value: v })),
           selectedIndex: range.findIndex(v => v === this.rangeMax),
         }],
       buttons: [

@@ -1,7 +1,7 @@
 {
   "name": "azure-data-inspector",
   "version": "0.0.1",
-  "author": "Ionic Framework",
+  "author": "Stephen Wu",
   "homepage": "https://ionicframework.com/",
   "scripts": {
     "ng": "ng",
@@ -13,6 +13,8 @@
   },
   "private": true,
   "dependencies": {
+    "@angular/animations": "^7.2.2",
+    "@angular/cdk": "^7.2.2",
     "@angular/common": "^7.2.2",
     "@angular/core": "^7.2.2",
     "@angular/forms": "^7.2.2",
@@ -27,7 +29,10 @@
     "@ionic/angular": "^4.1.0",
     "@swimlane/ngx-charts": "^11.1.0",
     "chart.js": "^2.8.0",
+    "chartjs-plugin-zoom": "^0.7.3",
     "core-js": "^2.5.4",
+    "es5-shim": "^4.5.12",
+    "lodash": "^4.17.11",
     "moment": "^2.24.0",
     "rxjs": "~6.5.1",
     "tslib": "^1.9.0",
@@ -43,9 +48,10 @@
     "@angular/compiler-cli": "~7.2.2",
     "@angular/language-service": "~7.2.2",
     "@ionic/angular-toolkit": "~1.5.1",
-    "@types/node": "~12.0.0",
+    "@types/chart.js": "^2.8.4",
     "@types/jasmine": "~2.8.8",
     "@types/jasminewd2": "~2.0.3",
+    "@types/node": "^12.0.10",
     "codelyzer": "~4.5.0",
     "jasmine-core": "~2.99.1",
     "jasmine-spec-reporter": "~4.2.1",
@@ -59,5 +65,5 @@
     "tslint": "~5.17.0",
     "typescript": "~3.1.6"
   },
-  "description": "An Ionic project"
+  "description": "Azure Data Inspector"
 }

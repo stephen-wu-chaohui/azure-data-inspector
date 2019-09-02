@@ -63,13 +63,4 @@
 		</ion-fab-button>
 	</ion-fab>
 
-	<ion-item *ngFor="let v of currentValues">
-		<ion-grid>
-			<ion-row>
-				<ion-col class="time" size="8" color="primary">{{lastUpdatedOf(v) | date: 'yyyy-MM-dd HH:mm:ss'}}</ion-col>
-				<ion-col class="value" size="4" color="primary">{{v.value | number: '2.2'}}</ion-col>
-			</ion-row>
-		</ion-grid>
-	</ion-item>
-
 </ion-content>

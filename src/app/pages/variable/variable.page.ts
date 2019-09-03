@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnDestroy, ViewChild, OnInit, ElementRef } from '@angular/core';
+import { Component, OnDestroy, ViewChild, OnInit, ElementRef, AfterViewInit } from '@angular/core';
 import { Company, Site, Sensor, SampleService, Sample, Entity } from '../../service/sample.service';
 import { CurrentSelectionService } from '../../service/current-selection.service';
 import { NavController, AlertController, ModalController, PickerController } from '@ionic/angular';
@@ -10,8 +10,7 @@ import * as Chart from 'chart.js';
   templateUrl: 'variable.page.html',
   styleUrls: ['variable.page.scss']
 })
-export class VariablePage implements AfterViewInit, OnDestroy {
-
+export class VariablePage implements OnDestroy, AfterViewInit {
   constructor(
     public selectionService: CurrentSelectionService,
     public sampleService: SampleService,
@@ -21,12 +20,10 @@ export class VariablePage implements AfterViewInit, OnDestroy {
     public modalController: ModalController
   ) {
     this.sensor = this.selectionService.currentSensor;
-    this.mountSamples();
 
     this.selectionService.sensorChanged.subscribe(
       sensor => {
         this.sensor = sensor;
-        this.mountSamples();
         this.updateChart();
       }
     );
@@ -35,18 +32,19 @@ export class VariablePage implements AfterViewInit, OnDestroy {
       sample => {
         if (this.sensor && sample.sensorId === this.sensor.id) {
           this.currentValues.unshift(sample);
-          this.updateChart();
+          this.updateChart(false);
         }
       }
     );
     this.sampleService.samples.mounted.subscribe(
       samples => {
-        this.mountSamples();
         this.updateChart();
       });
   }
-  
+
   @ViewChild('lineChart') lineChart: ElementRef;
+  @ViewChild('dateFrom') elementDateFrom;
+  @ViewChild('dateTo') elementDateTo;
 
   chart: Chart;
   project: Company;
@@ -69,14 +67,19 @@ export class VariablePage implements AfterViewInit, OnDestroy {
 
   currentValues: Sample[] = [];
 
+  dateFrom = moment().startOf('day').toDate();
+  dateTo = moment().endOf('day').toDate();
+
   lastUpdatedOf(s: Sample) { return moment.unix(s.lastUpdated).toDate(); }
 
   private mountSamples() {
     if (this.sensor) {
-        this.currentValues = this.sampleService.samples.data
-                                 .filter(v => v.sensorId === this.sensor.id)
-                                 .sort((a, b) => (b.lastUpdated - a.lastUpdated))
-                                 .slice(0, this.sampleNumbers);
+      const momentFrom = moment(this.dateFrom).startOf('day').unix();
+      const momentTo = moment(this.dateTo).endOf('day').unix();
+      this.currentValues = this.sampleService.samples.data
+         .filter(v => v.sensorId === this.sensor.id && (v.lastUpdated >= momentFrom && v.lastUpdated <= momentTo))
+         .sort((a, b) => (b.lastUpdated - a.lastUpdated))
+         .slice(0, this.sampleNumbers);
     }
   }
 
@@ -141,6 +144,8 @@ export class VariablePage implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    this.elementDateFrom.setValue('11/11/2018');
+    this.elementDateTo.setValue('11/11/2019');
     this.updateChart();
   }
 
@@ -153,18 +158,21 @@ export class VariablePage implements AfterViewInit, OnDestroy {
     this.nav.navigateForward('/variable-chart');
   }
 
-  updateChart() {
-    const samples = this.currentValues.slice(0, this.sampleNumbers).reverse();
-    while (samples.length < this.sampleNumbers) {
-      samples.push({
-        keywords: '',
-        lastUpdated: Entity.unixNow(),
-        deleted: false,
-        sensorId: 0,
-        value: 0,
-        tm: new Date(),
-      });
+  updateChart(mountSamples = true) {
+    if (mountSamples) {
+      this.mountSamples();
     }
+    const samples = this.currentValues.slice(0, this.sampleNumbers).reverse();
+    // while (samples.length < this.sampleNumbers) {
+    //   samples.push({
+    //     keywords: '',
+    //     lastUpdated: Entity.unixNow(),
+    //     deleted: false,
+    //     sensorId: 0,
+    //     value: 0,
+    //     tm: new Date(),
+    //   });
+    // }
 
     const labels = samples.map(v => moment.unix(v.lastUpdated).toDate());
     const data = samples.map(v => v.value);
@@ -186,7 +194,7 @@ export class VariablePage implements AfterViewInit, OnDestroy {
     if (this.chart) {
       this.chart.config.data = graphData;
       this.chart.update();
-    } else {
+    } else if (this.lineChart) {
       const timeFormat = 'MM/DD/YYYY HH:mm';
       const options = {
         responsive: true,
@@ -304,7 +312,7 @@ export class VariablePage implements AfterViewInit, OnDestroy {
     await picker.present();
   }
 
-  async pickRange() {
+  async pickValueRange() {
     const range = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
     const picker = await this.pickerController.create({
       columns: [{
@@ -331,7 +339,6 @@ export class VariablePage implements AfterViewInit, OnDestroy {
       ]
     });
     await picker.present();
-
   }
 }
 

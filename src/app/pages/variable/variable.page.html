@@ -1,41 +1,37 @@
 <ion-header>
   <ion-toolbar>
-		<ion-buttons slot="start">
-			<ion-back-button defaultHref="/home"></ion-back-button>
-		</ion-buttons>
-		<ion-title>
-			Sensor View
-    </ion-title>
+	<ion-buttons slot="start">
+		<ion-back-button defaultHref="/home"></ion-back-button>
+	</ion-buttons>
+	<ion-title>{{isReadonly()? sensor?.name : 'Sensor View'}}</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
-<ion-card *ngIf="sensor">
-	<ion-card-header>
-		<ion-card-title>
-			<ion-text>
-				<ion-input type="text" [(ngModel)]="sensor.name" (ionChange)="setLabelChanged()" color="labelChanged?'danger':'primary'">
-				</ion-input>
-			</ion-text>
-		</ion-card-title>
-		<ion-card-subtitle>
-			<ion-text>
-				<ion-input type="text" [(ngModel)]="sensor.description" (ionChange)="setLabelChanged()" color="labelChanged?'danger':'primary'">
-				</ion-input>
-			</ion-text>
-		</ion-card-subtitle>
-	</ion-card-header>
+<ion-content pending *ngIf="sensor">
+	<ion-text class="title" *ngIf="!isReadonly()">
+		<ion-input type="text" [(ngModel)]="sensor.name" (ionChange)="setLabelChanged()" color="labelChanged?'danger':'primary'">
+		</ion-input>
+	</ion-text>
+	<ion-text class="subtitle">
+		<ion-input type="text" [(ngModel)]="sensor.description" (ionChange)="setLabelChanged()" color="labelChanged?'danger':'primary'" [readonly]="isReadonly()">
+		</ion-input>
+	</ion-text>
 
-	<ion-card-content >
+	<ion-card-content>
 		<section class="chart-wrapper">
 			<canvas #lineChart></canvas>
 		</section>
 
 		<ion-grid>
 			<ion-row item-content>
-				<ion-col><ion-datetime #dateFrom displayFormat="DD/MM/YYYY" pickerFormat="DD MMMM YYYY" [(ngModel)]="dateFrom" (ionChange)="updateChart()"></ion-datetime></ion-col>
-				<ion-col><ion-label>to</ion-label></ion-col>
-				<ion-col><ion-datetime #dateTo displayFormat="DD/MM/YYYY" pickerFormat="DD MMMM YYYY" [(ngModel)]="dateTo" (ionChange)="updateChart()"></ion-datetime></ion-col>
+				<ion-col>
+					<ion-label position="floating">Date range from</ion-label>
+					<ion-datetime class="date-range" #fromDate displayFormat="DD/MM/YYYY" pickerFormat="DD MMMM YYYY" [placeholder]="dateFrom | date:'yyyy-MM-dd'" (ionChange)="setDateFrom(fromDate.value)"></ion-datetime>
+				</ion-col>
+				<ion-col>
+					<ion-label position="floating">to</ion-label>
+					<ion-datetime class="date-range" #toDate displayFormat="DD/MM/YYYY" pickerFormat="DD MMMM YYYY" [placeholder]="dateTo | date:'yyyy-MM-dd'" (ionChange)="setDateTo(toDate.value)"></ion-datetime>
+				</ion-col>
 			</ion-row>
 		</ion-grid>
 
@@ -66,11 +62,10 @@
 		</ion-item-group>
 	</ion-card-content>
 
-	<ion-fab vertical="top" horizontal="end" slot="fixed">
+	<ion-fab vertical="top" horizontal="end" slot="fixed" *ngIf="selectionService.editMode">
 		<ion-fab-button size="small" (click)="updateSensor()" color="danger" [disabled]="!labelChanged">
 			<ion-icon name="checkbox-outline"></ion-icon>
 		</ion-fab-button>
 	</ion-fab>
 
-</ion-card>
 </ion-content>

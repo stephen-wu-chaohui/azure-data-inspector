@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ViewChild, OnInit, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { Company, Site, Sensor, SampleService, Sample, Entity } from '../../service/sample.service';
 import { CurrentSelectionService } from '../../service/current-selection.service';
 import { NavController, AlertController, ModalController, PickerController } from '@ionic/angular';
@@ -37,14 +37,12 @@ export class VariablePage implements OnDestroy, AfterViewInit {
       }
     );
     this.sampleService.samples.mounted.subscribe(
-      samples => {
+      () => {
         this.updateChart();
       });
   }
 
   @ViewChild('lineChart') lineChart: ElementRef;
-  @ViewChild('dateFrom') elementDateFrom;
-  @ViewChild('dateTo') elementDateTo;
 
   chart: Chart;
   project: Company;
@@ -72,14 +70,34 @@ export class VariablePage implements OnDestroy, AfterViewInit {
 
   lastUpdatedOf(s: Sample) { return moment.unix(s.lastUpdated).toDate(); }
 
+  isReadonly() {
+    return !this.selectionService.editMode;
+  }
+
+  chartXlabel(): string {
+    if (!this.chart) {
+      return '';
+    }
+    const dates = this.chart.data.labels.map(d => d as Date);
+    if (!dates || !dates.length) {
+      return '';
+    }
+    const firstDate = moment(dates[0]).date;
+    const lastDate = moment(dates[dates.length - 1]).date;
+    if (firstDate === lastDate) {
+      return firstDate.toString();
+    } else {
+      return `${firstDate.toString()} - ${lastDate.toString()}`;
+    }
+  }
+
   private mountSamples() {
     if (this.sensor) {
       const momentFrom = moment(this.dateFrom).startOf('day').unix();
       const momentTo = moment(this.dateTo).endOf('day').unix();
       this.currentValues = this.sampleService.samples.data
          .filter(v => v.sensorId === this.sensor.id && (v.lastUpdated >= momentFrom && v.lastUpdated <= momentTo))
-         .sort((a, b) => (b.lastUpdated - a.lastUpdated))
-         .slice(0, this.sampleNumbers);
+         .sort((a, b) => (a.lastUpdated - b.lastUpdated));
     }
   }
 
@@ -144,8 +162,6 @@ export class VariablePage implements OnDestroy, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.elementDateFrom.setValue('11/11/2018');
-    this.elementDateTo.setValue('11/11/2019');
     this.updateChart();
   }
 
@@ -162,18 +178,7 @@ export class VariablePage implements OnDestroy, AfterViewInit {
     if (mountSamples) {
       this.mountSamples();
     }
-    const samples = this.currentValues.slice(0, this.sampleNumbers).reverse();
-    // while (samples.length < this.sampleNumbers) {
-    //   samples.push({
-    //     keywords: '',
-    //     lastUpdated: Entity.unixNow(),
-    //     deleted: false,
-    //     sensorId: 0,
-    //     value: 0,
-    //     tm: new Date(),
-    //   });
-    // }
-
+    const samples = this.currentValues;
     const labels = samples.map(v => moment.unix(v.lastUpdated).toDate());
     const data = samples.map(v => v.value);
     const backgroundColor = samples.map(v => `rgba(${v.sensorId % 256}, ${v.lastUpdated % 256}, ${Math.floor(v.value * 12)})`);
@@ -195,12 +200,18 @@ export class VariablePage implements OnDestroy, AfterViewInit {
       this.chart.config.data = graphData;
       this.chart.update();
     } else if (this.lineChart) {
-      const timeFormat = 'MM/DD/YYYY HH:mm';
       const options = {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 0 },
-        legend: { display: false },
+        title: {
+          display: false,
+          fullWidth: true,
+          fontSize: 24,
+          fontColor: 'blue',
+          text: this.sensor.name
+        },
+        legend: { display: false},
         scales: {
            yAxes: [{
               ticks: {
@@ -209,23 +220,23 @@ export class VariablePage implements OnDestroy, AfterViewInit {
                  max : 20
               }
            }],
-           xAxes: [
-            {
+            xAxes: [{
               type: 'time',
               time: {
-                format: timeFormat,
-                // round: 'day'
-                tooltipFormat: 'll HH:mm'
-              },
-              scaleLabel: {
-                display: true,
-                labelString: 'Date'
+                  parser: 'YYYY-MM-DD HH:mm',
+                  displayFormats: {
+                    millisecond: 'HH:mm:ss',
+                    second: 'HH:mm:ss',
+                    minute: 'HH:mm',
+                    hour: 'HH',
+                    day: 'YYYY-MM-DD',
+                    week: 'YYYY-MM-DD',
+                  },
               },
               ticks: {
                 maxRotation: 0
               }
-            }
-          ],
+            }]
         },
         pan: {
           enabled: true,
@@ -244,7 +255,6 @@ export class VariablePage implements OnDestroy, AfterViewInit {
         }
       };
 
-      // tslint:disable-next-line: no-unused-expression
       const ctx = (this.lineChart.nativeElement as HTMLCanvasElement).getContext('2d');
       this.chart = new Chart(ctx,
         {
@@ -339,6 +349,16 @@ export class VariablePage implements OnDestroy, AfterViewInit {
       ]
     });
     await picker.present();
+  }
+
+  setDateFrom(v) {
+    this.dateFrom = v;
+    this.updateChart();
+  }
+
+  setDateTo(v) {
+    this.dateTo = v;
+    this.updateChart();
   }
 }
 

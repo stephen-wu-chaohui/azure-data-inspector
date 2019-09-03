@@ -65,8 +65,8 @@ export class VariablePage implements OnDestroy, AfterViewInit {
 
   currentValues: Sample[] = [];
 
-  dateFrom = moment().startOf('day').toDate();
-  dateTo = moment().endOf('day').toDate();
+  dateFrom = moment().subtract(1, 'years').startOf('day').toDate();
+  dateTo = moment().add(7, 'days').endOf('day').toDate();
 
   lastUpdatedOf(s: Sample) { return moment.unix(s.lastUpdated).toDate(); }
 
@@ -228,10 +228,13 @@ export class VariablePage implements OnDestroy, AfterViewInit {
                     millisecond: 'HH:mm:ss',
                     second: 'HH:mm:ss',
                     minute: 'HH:mm',
-                    hour: 'HH',
-                    day: 'YYYY-MM-DD',
-                    week: 'YYYY-MM-DD',
                   },
+              },
+              scaleLabel: {
+                display: true,
+                fontColor: 'blue',
+                labelString: '',
+                fontSize: 16,
               },
               ticks: {
                 maxRotation: 0
@@ -242,7 +245,16 @@ export class VariablePage implements OnDestroy, AfterViewInit {
           enabled: true,
           mode: 'x',
           speed: 10,
-          threshold: 10
+          threshold: 10,
+          onPanComplete: this.setXaxesLabel,
+          rangeMin: {
+            x: this.dateFrom,
+            y: 0
+          },
+          rangeMax: {
+            x: this.dateTo,
+            y: 20
+          },
         },
         zoom: {
           enabled: true,
@@ -251,7 +263,16 @@ export class VariablePage implements OnDestroy, AfterViewInit {
           limits: {
             max: 30,
             min: 0.5
-          }
+          },
+          onZoomComplete: this.setXaxesLabel,
+          rangeMin: {
+            x: this.dateFrom,
+            y: 0
+          },
+          rangeMax: {
+            x: this.dateTo,
+            y: 20
+          },
         }
       };
 
@@ -263,6 +284,13 @@ export class VariablePage implements OnDestroy, AfterViewInit {
            options,
         });
     }
+  }
+
+  setXaxesLabel(a: { chart: any; }) {
+    const min = moment(a.chart.scales['x-axis-0'].min).format('YYYY-MM-DD');
+    const max = moment(a.chart.scales['x-axis-0'].max).format('YYYY-MM-DD');
+    const chartDate = (min === max) ? min : `${min} to ${max}`;
+    a.chart.options.scales.xAxes[0].scaleLabel.labelString = chartDate;
   }
 
   async pickSampleInterval() {

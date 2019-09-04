@@ -68,7 +68,11 @@ export class SitePage {
 
   configSensor(sensor: Sensor) {
     this.selectionService.currentSensor = sensor;
-    this.nav.navigateForward('/variable');
+    if (this.selectionService.editMode) {
+      this.nav.navigateForward('/sensor');
+    } else {
+      this.nav.navigateForward('/variable');
+    }
   }
 
   setLabelChanged() {

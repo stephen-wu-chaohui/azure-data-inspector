@@ -3,69 +3,26 @@
 	<ion-buttons slot="start">
 		<ion-back-button defaultHref="/home"></ion-back-button>
 	</ion-buttons>
-	<ion-title>{{isReadonly()? sensor?.name : 'Sensor View'}}</ion-title>
+	<ion-title>{{sensor?.name}}</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content pending *ngIf="sensor">
-	<ion-text class="title" *ngIf="!isReadonly()">
-		<ion-input type="text" [(ngModel)]="sensor.name" (ionChange)="setLabelChanged()" color="labelChanged?'danger':'primary'">
-		</ion-input>
-	</ion-text>
-	<ion-text class="subtitle">
-		<ion-input type="text" [(ngModel)]="sensor.description" (ionChange)="setLabelChanged()" color="labelChanged?'danger':'primary'" [readonly]="isReadonly()">
-		</ion-input>
-	</ion-text>
+<ion-content padding *ngIf="sensor">
+	<section class="chart-wrapper">
+		<canvas #lineChart></canvas>
+	</section>
 
-	<ion-card-content>
-		<section class="chart-wrapper">
-			<canvas #lineChart></canvas>
-		</section>
-
-		<ion-grid>
-			<ion-row item-content>
-				<ion-col>
-					<ion-label position="floating">Date range from</ion-label>
-					<ion-datetime class="date-range" #fromDate displayFormat="DD/MM/YYYY" pickerFormat="DD MMMM YYYY" [placeholder]="dateFrom | date:'yyyy-MM-dd'" (ionChange)="setDateFrom(fromDate.value)"></ion-datetime>
-				</ion-col>
-				<ion-col>
-					<ion-label position="floating">to</ion-label>
-					<ion-datetime class="date-range" #toDate displayFormat="DD/MM/YYYY" pickerFormat="DD MMMM YYYY" [placeholder]="dateTo | date:'yyyy-MM-dd'" (ionChange)="setDateTo(toDate.value)"></ion-datetime>
-				</ion-col>
-			</ion-row>
-		</ion-grid>
-
-		<ion-item lines="none" *ngIf="selectionService.editMode" (click)="pickSampleInterval()">
-			<ion-checkbox [(ngModel)]="enableSampling"></ion-checkbox>
-			<ion-label>Sample every {{sampleInterval}} seconds</ion-label>
-		</ion-item>
-
-		<ion-item-group padding *ngIf="enableSampling && selectionService.editMode">
-			<ion-item>
-				<ion-label>Simulator Mode</ion-label>
-				<ion-select text-right [interfaceOptions]="customPopoverOptions" interface="popover" [(ngModel)]="simulatorMode">
-					<ion-select-option value="random">Random</ion-select-option>
-					<ion-select-option value="sine">Sine</ion-select-option>
-					<ion-select-option value="segment">Segment</ion-select-option>
-				</ion-select>
-			</ion-item>
-
-			<ion-item (click)="pickDuration()">
-				<ion-label>Duration:</ion-label>
-				<ion-label text-right>{{duration}} seconds</ion-label>
-			</ion-item>
-
-			<ion-item (click)="pickValueRange()">
-				<ion-label>Value from: </ion-label>
-				<ion-label text-right>{{rangeMin | number: '.1'}} to {{rangeMax | number: '.1'}}</ion-label>
-			</ion-item>
-		</ion-item-group>
-	</ion-card-content>
-
-	<ion-fab vertical="top" horizontal="end" slot="fixed" *ngIf="selectionService.editMode">
-		<ion-fab-button size="small" (click)="updateSensor()" color="danger" [disabled]="!labelChanged">
-			<ion-icon name="checkbox-outline"></ion-icon>
-		</ion-fab-button>
-	</ion-fab>
+	<ion-grid>
+		<ion-row item-content>
+			<ion-col>
+				<ion-label position="floating">Date range from</ion-label>
+				<ion-datetime class="date-range" #fromDate displayFormat="DD/MM/YYYY" pickerFormat="DD MMMM YYYY" [value]="dateFrom | date:'yyyy-MM-dd'" (ionChange)="setDateFrom(fromDate.value)"></ion-datetime>
+			</ion-col>
+			<ion-col>
+				<ion-label position="floating">to</ion-label>
+				<ion-datetime class="date-range" #toDate displayFormat="DD/MM/YYYY" pickerFormat="DD MMMM YYYY" [value]="dateTo | date:'yyyy-MM-dd'" (ionChange)="setDateTo(toDate.value)"></ion-datetime>
+			</ion-col>
+		</ion-row>
+	</ion-grid>
 
 </ion-content>

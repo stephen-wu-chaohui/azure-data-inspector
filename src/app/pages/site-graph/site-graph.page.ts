@@ -5,21 +5,21 @@ import { NavController, AlertController, ModalController, PickerController } fro
 import * as moment from 'moment';
 import * as Chart from 'chart.js';
 import * as _ from 'lodash';
+import { Dictionary } from 'lodash';
 
 @Component({
-  selector: 'app-variable',
-  templateUrl: 'variable.page.html',
-  styleUrls: ['variable.page.scss']
+  selector: 'app-site-graph',
+  templateUrl: './site-graph.page.html',
+  styleUrls: ['./site-graph.page.scss'],
 })
-export class VariablePage implements AfterViewInit {
+export class SiteGraphPage implements AfterViewInit {
   @ViewChild('lineChart') lineChart: ElementRef;
 
   chart: Chart;
   project: Company;
   site: Site;
-  sensor: Sensor;
 
-  currentValues: Sample[] = [];
+  currentValues: Dictionary<Sample[]>;
   dateFrom = moment().subtract(1, 'years').startOf('day').toDate();
   dateTo = moment().add(7, 'days').endOf('day').toDate();
 
@@ -31,23 +31,24 @@ export class VariablePage implements AfterViewInit {
     public pickerController: PickerController,
     public modalController: ModalController
   ) {
-    this.sensor = this.selectionService.currentSensor;
+    this.site = this.selectionService.currentSite;
 
-    this.selectionService.sensorChanged.subscribe(
-      sensor => {
-        this.sensor = sensor;
+    this.selectionService.siteChanged.subscribe(
+      site => {
+        this.site = site;
         this.updateChart();
       }
     );
 
-    this.sampleService.samples.changed.subscribe(
-      sample => {
-        if (this.sensor && sample.sensorId === this.sensor.id) {
-          this.currentValues.unshift(sample);
-          this.updateChart(false);
-        }
-      }
-    );
+    // this.sampleService.samples.changed.subscribe(
+    //   sample => {
+    //     if (this.sensor && sample.sensorId === this.sensor.id) {
+    //       this.currentValues.unshift(sample);
+    //       this.updateChart(false);
+    //     }
+    //   }
+    // );
+
     this.sampleService.samples.mounted.subscribe(
       () => {
         this.updateChart();
@@ -55,41 +56,72 @@ export class VariablePage implements AfterViewInit {
   }
 
   private mountSamples() {
-    if (this.sensor) {
-      const momentFrom = moment(this.dateFrom).startOf('day').unix();
-      const momentTo = moment(this.dateTo).endOf('day').unix();
+    const momentFrom = moment(this.dateFrom).startOf('day').unix();
+    const momentTo = moment(this.dateTo).endOf('day').unix();
 
-      this.currentValues = this.sampleService.samples.data
-         .filter(v => v.sensorId === this.sensor.id && (v.lastUpdated >= momentFrom && v.lastUpdated <= momentTo))
-         .sort((a, b) => (a.lastUpdated - b.lastUpdated));
-    }
+    const group = _.chain(this.sampleService.samples.data)
+      .filter(v => v.lastUpdated >= momentFrom && v.lastUpdated <= momentTo)
+      .groupBy('sensorId')
+      .value();
+    console.log('group', group);
+
+    const sensors = this.sampleService.sensorsOf(this.site);
+    const sensorIds = sensors.filter(s => s.id).map(s => s.id.toString());
+
+    const filtered = _.pickBy(group, (id, key) => sensorIds.includes(key));
+    this.currentValues = filtered;
   }
 
   ngAfterViewInit(): void {
     this.updateChart();
   }
 
-
   updateChart(mountSamples = true) {
     if (mountSamples) {
       this.mountSamples();
     }
-    const samples = this.currentValues;
+
+    const sensors = this.sampleService.sensorsOf(this.site);
+    const sensorIds = sensors.filter(s => s.id).map(s => s.id.toString());
+
+    const samples = this.currentValues[sensorIds[1]];
     const labels = samples.map(v => moment.unix(v.lastUpdated).toDate());
-    const data = samples.map(v => v.value);
-    const backgroundColor = samples.map(v => `rgba(${v.sensorId % 256}, ${v.lastUpdated % 256}, ${Math.floor(v.value * 12)})`);
-    const hoverBackgroundColor = [...backgroundColor];
+    const names = sensors.reduce((map, sensor) => {
+            map[sensor.id] = sensor.name;
+            return map;
+        }, {});
+    
+    const colors = [
+      'rgba(255,0,0)',
+      'rgba(0,255,0)',
+      'rgba(0,0,255)',
+      'rgba(255,255,0)',
+      'rgba(255,255,0)',
+      'rgba(255,0,255)',
+      'rgba(128,128,128)',
+      'rgba(128,0,0)',
+      'rgba(128,0,0)',
+      'rgba(128,0,0)',
+      'rgba(128,0,0)',
+      'rgba(0,128,128)',
+      'rgba(0,0,128)',
+    ];
+
+
+    const backgroundColor = k => samples.map(v => colors[k%10]);
+
+    const datasets = _.map(this.currentValues, (sample, k) => ({
+         label: '',
+         data: sample.map(v => v.value),
+         lineTension: 0,
+         backgroundColor: backgroundColor(k),
+         hoverBackgroundColor: backgroundColor(k),
+         fill: false
+      }));
 
     const graphData = {
       labels,
-      datasets: [{
-         label: '',
-         data,
-         lineTension: 0,
-         backgroundColor,
-         hoverBackgroundColor,
-         fill: false
-      }]
+      datasets,
     };
 
     if (this.chart) {
@@ -110,7 +142,7 @@ export class VariablePage implements AfterViewInit {
         fullWidth: true,
         fontSize: 18,
         fontColor: 'blue',
-        text: this.sensor.description
+        text: this.site.name,
       },
       legend: { display: false},
       scales: {

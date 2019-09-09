@@ -7,7 +7,7 @@ import { Company, Site, Sensor, Sample, SampleService } from './sample.service';
 })
 export class CurrentSelectionService {
 
-	editMode = false;
+  editMode = false;
 
   // Project
   private selectedProject: Company;
@@ -15,7 +15,9 @@ export class CurrentSelectionService {
   get currentProject(): Company { return this.selectedProject; }
   set currentProject(newValue: Company) {
     this.selectedProject = newValue;
-    this.projectChanged.next(newValue);
+    if (newValue) {
+      this.projectChanged.next(newValue);
+    }
     this.currentSite = null;
     this.currentSensor = null;
   }
@@ -26,7 +28,9 @@ export class CurrentSelectionService {
   get currentSite(): Site { return this.selectedSite; }
   set currentSite(newValue: Site) {
     this.selectedSite = newValue;
-    this.siteChanged.next(newValue);
+    if (newValue) {
+      this.siteChanged.next(newValue);
+    }
     this.currentSensor = null;
   }
 
@@ -36,7 +40,9 @@ export class CurrentSelectionService {
   get currentSensor(): Sensor { return this.selectedSensor; }
   set currentSensor(newValue: Sensor) {
     this.selectedSensor = newValue;
-    this.sensorChanged.next(newValue);
+    if (newValue) {
+      this.sensorChanged.next(newValue);
+    }
   }
 
   constructor() {

@@ -8,6 +8,7 @@ const routes: Routes = [
   {	path: 'site',	loadChildren: './pages/site/site.module#SitePageModule' },
   {	path: 'variable',	loadChildren: './pages/variable/variable.module#VariablePageModule' },
   { path: 'sensor', loadChildren: './pages/sensor/sensor.module#SensorPageModule' },
+  { path: 'site-graph', loadChildren: './pages/site-graph/site-graph.module#SiteGraphPageModule' },
 ];
 @NgModule({
   imports: [

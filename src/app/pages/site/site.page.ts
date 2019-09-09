@@ -75,6 +75,10 @@ export class SitePage {
     }
   }
 
+  onAnalytics() {
+    this.nav.navigateForward('/site-graph');
+  }
+
   setLabelChanged() {
     this.labelChanged = true;
   }
